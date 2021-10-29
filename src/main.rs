@@ -27,8 +27,16 @@ fn main() {
 	let keywords = vec!["unsigned", "char", "short", "int", "long", "float", "double","while", "if", "return", "void", "main"];
 	let operators = vec!["(", ",", ")", "{", "}", "=", "==", "<", ">", "<=", ">=", "!=", "+", "-", "*", "/", ";"];
 
-	let scanner: Scanner = Scanner::new(stream, keywords, operators);
+	let mut scanner: Scanner = Scanner::new(stream, keywords, operators);
 	let kws: &Vec<String> = scanner.get_operators();
 	println!("{:?}", kws);
-	scanner.get_world();
+	let token = scanner.get_next_token();
+	let a_char = scanner.get_non_blank();
+	println!("char: {}", a_char.unwrap());
+	scanner.add_to_lexeme(a_char);
+	scanner.print_lexeme();
+
+	let newline:char = "\n".parse().unwrap();
+	println!("check {} this", newline);
+
 }
