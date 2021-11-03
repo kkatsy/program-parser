@@ -1,22 +1,11 @@
-// use test::Options;
+use test::Options;
 use crate::character_stream::CharStream;
 use crate::token::Token;
 use crate::token::TokenType;
 
-// Due to the fact that there is a unary negation “-” operation in X, the scanning has one slight com-
-// plication. If a “-” sign is followed by digits, but preceded by an ID or constant, it is considered the
-// subtract operator, and not part of the following constant.
-
-// Don’t worry about differentiating between variables and function names at this stage. Your parser
-// will deal with this issue later.
-
-// The Scanner struct should have a method named get_next_token() or something similar that when
-// called, will return the next token as read from the .x file.
+// TODO: add underscore for words and negation for numbers
 
 pub struct Scanner {
-    // open the .x file as specified on the command line and tokenize the
-    // text of the files into operators, intConstants, floatConstants, keywords, and identifiers.
-    // uses character stream struct to do this
     keywords: Vec<String>,
     operators: Vec<String>,
     char_stream: CharStream,
@@ -52,7 +41,7 @@ impl Scanner {
 
     pub fn print_lexeme(&self) -> () { println!("cur lexeme: {}", &self.cur_lexeme); }
 
-    //
+    /* check if string in the keyword list */
     pub fn is_keyword(&self, a_string: String) -> bool {
         if self.keywords.contains(&a_string.to_string()) {
             true
@@ -61,7 +50,7 @@ impl Scanner {
         }
     }
 
-    //
+    /* check if string is in the operator list */
     pub fn is_operator(&self, a_char: String) -> bool {
         if self.operators.contains(&a_char.to_string()) {
             true
@@ -70,7 +59,7 @@ impl Scanner {
         }
     }
 
-    //
+    /* lookup if next lexeme is an operator */
     pub fn look_up(&mut self) -> () {
         if self.is_operator(self.cur_char.to_string()){
 
@@ -94,19 +83,19 @@ impl Scanner {
         }
     }
 
-    //
+    /* add char to current lexeme */
     pub fn add_to_lexeme(&mut self, char_to_add: char) -> () {
         self.cur_lexeme.push(char_to_add);
     }
 
-    //
+    /* add new token to vector */
     pub fn add_token(&mut self, token_type: TokenType) -> () {
         let mut current_lexeme = &self.cur_lexeme;
         let token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.cur_char_pos);
         self.tokens.push(token);
     }
 
-    //
+    /* get next lexeme in char stream */
     pub fn lexer(&mut self) -> () {
         if self.cur_char.is_alphabetic() {
             while {
@@ -155,7 +144,7 @@ impl Scanner {
         self.cur_lexeme = "".to_string();
     }
 
-    //
+    /* get the next non-blank character in char stream */
     pub fn get_non_blank(&mut self) -> Option<char> {
         let mut a_char: Option<char> = Option::from(self.cur_char);
 
@@ -169,7 +158,7 @@ impl Scanner {
         a_char
     }
 
-    //
+    /* convert char stream to vector of tokens */
     pub fn stream_to_tokens(&mut self) -> () {
         while {
             self.cur_char = self.get_non_blank().unwrap();
@@ -180,7 +169,7 @@ impl Scanner {
         } {};
     }
 
-    //
+    /* get the next token from the token vector */
     pub fn get_next_token(&mut self) -> &Token {
         let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
         self.tokens.push(a_token);
