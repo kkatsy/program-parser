@@ -40,7 +40,7 @@ impl CharStream {
 
 	// Returns true if more characters are available, false otherwise.
 	pub fn more_available(&self) -> bool {
-		if self.cur_pos <= (self.file_len - 1) {
+		if self.cur_pos < (self.file_len - 1) {
 			true
 		} else {
 			false

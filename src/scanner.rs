@@ -149,7 +149,8 @@ impl Scanner {
 
         } else {
             self.look_up();
-            self.cur_char = self.char_stream.get_next_char().unwrap();
+            // implement eof character
+            //self.cur_char = self.char_stream.get_next_char().unwrap();
         };
 
         self.cur_lexeme = "".to_string();
