@@ -1,3 +1,4 @@
+// use test::Options;
 use crate::character_stream::CharStream;
 use crate::token::Token;
 use crate::token::TokenType;
@@ -24,7 +25,9 @@ pub struct Scanner {
     operators: Vec<String>,
     char_stream: CharStream,
     cur_lexeme: String,
+    prev_lexeme: String,
     tokens: Vec<Token>,
+    cur_char: char,
     cur_line_num: i32,
     cur_char_pos: i32,
     token_pos: i32
@@ -38,7 +41,9 @@ impl Scanner {
             operators: op.iter().map(|s| s.to_string()).collect(),
             char_stream: c_s,
             cur_lexeme: "".to_string(),
+            prev_lexeme: "".to_string(),
             tokens: Vec::new(),
+            cur_char: ' ',
             cur_line_num: 0,
             cur_char_pos: 0,
             token_pos: 0
@@ -53,16 +58,101 @@ impl Scanner {
 
     pub fn print_lexeme(&self) -> () { println!("cur lexeme: {}", &self.cur_lexeme); }
 
-    pub fn look_up(&self) -> () {
-
+    pub fn is_keyword(&self, a_string: String) -> bool {
+        if self.keywords.contains(&a_string.to_string()) {
+            true
+        } else {
+            false
+        }
     }
 
-    pub fn add_to_lexeme(&mut self, char_to_add: Option<char>) -> () {
-        self.cur_lexeme.push(char_to_add.unwrap());
+    pub fn is_operator(&self, a_char: String) -> bool {
+        if self.operators.contains(&a_char.to_string()) {
+            true
+        } else {
+            false
+        }
     }
 
-    pub fn lexer(&mut self, next_char: &Option<char>) -> () {
+    pub fn look_up(&mut self) -> () {
+        if self.is_operator(self.cur_char.to_string()){
 
+            let peak_char = self.char_stream.peek_next_char().unwrap();
+            if self.is_operator(peak_char.to_string()) {
+                let mut combined_vec = vec![self.cur_char, peak_char];
+                let combined: String = combined_vec.into_iter().collect();
+                if self.is_operator(combined) {
+                    self.add_to_lexeme(self.cur_char);
+                    self.cur_char = self.char_stream.get_next_char().unwrap();
+
+                }
+
+            }
+            self.add_to_lexeme(self.cur_char);
+            self.cur_char = self.char_stream.get_next_char().unwrap();
+            self.add_token(TokenType::OPERATOR);
+
+        } else {
+
+            self.add_token(TokenType::INVALID);
+        }
+    }
+
+    pub fn add_to_lexeme(&mut self, char_to_add: char) -> () {
+        self.cur_lexeme.push(char_to_add);
+    }
+
+    pub fn add_token(&mut self, token_type: TokenType) -> () {
+        let mut current_lexeme = &self.cur_lexeme;
+        let token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.token_pos);
+        self.tokens.push(token);
+    }
+
+    pub fn lexer(&mut self) -> () {
+        if self.cur_char.is_alphabetic() {
+            while {
+                self.add_to_lexeme(self.cur_char);
+                self.cur_char = self.char_stream.get_next_char().unwrap();
+
+                self.cur_char.is_alphabetic()
+            } {};
+
+            let mut current_lexeme = &self.cur_lexeme;
+            if self.is_keyword(current_lexeme.to_string()) {
+                self.add_token(TokenType::KEYWORD);
+            } else {
+                self.add_token(TokenType::IDENTIFIER);
+            };
+
+        } else if self.cur_char.is_numeric() {
+            while {
+                self.add_to_lexeme(self.cur_char);
+                self.cur_char = self.char_stream.get_next_char().unwrap();
+
+                self.cur_char.is_numeric()
+            } {};
+
+            if self.cur_char == ".".chars().next().unwrap() {
+                let peak_char = self.char_stream.peek_next_char();
+                if peak_char.unwrap().is_numeric() {
+                    while {
+                        self.add_to_lexeme(self.cur_char);
+                        self.cur_char = self.char_stream.get_next_char().unwrap();
+
+                        self.cur_char.is_numeric()
+                    } {};
+                    self.add_token(TokenType::FLOATCONSTANT);
+                }
+            } else {
+                self.add_token(TokenType::INTCONSTANT);
+            };
+
+        } else {
+            self.look_up();
+            self.cur_char = self.char_stream.get_next_char().unwrap();
+        };
+
+        self.cur_lexeme = "".to_string();
     }
 
     pub fn get_non_blank(&mut self) -> Option<char> {
@@ -82,8 +172,9 @@ impl Scanner {
 
     pub fn stream_to_tokens(&mut self) -> () {
         while {
-            let a_char = &self.get_non_blank();
-            self.lexer(a_char);
+            self.cur_char = self.get_non_blank().unwrap();
+            self.token_pos = self.cur_char_pos;
+            self.lexer();
 
             self.char_stream.more_available()
         } {};

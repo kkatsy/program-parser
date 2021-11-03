@@ -6,7 +6,8 @@ pub enum TokenType {
     KEYWORD,
     VARIABLE,
 	FUNCTION,
-    INVALID
+    INVALID,
+    IDENTIFIER
 }
 
 impl TokenType {
@@ -19,7 +20,8 @@ impl TokenType {
             TokenType::KEYWORD => "Keyword",
             TokenType::VARIABLE => "Variable",
             TokenType::FUNCTION => "Function",
-            TokenType::INVALID => "Invalid"
+            TokenType::INVALID => "Invalid",
+            TokenType::IDENTIFIER => "Identifier"
         }   
     }   
 }

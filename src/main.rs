@@ -31,12 +31,29 @@ fn main() {
 	let kws: &Vec<String> = scanner.get_operators();
 	println!("{:?}", kws);
 	let token = scanner.get_next_token();
-	let a_char = scanner.get_non_blank();
-	println!("char: {}", a_char.unwrap());
+	let a_char = scanner.get_non_blank().unwrap();
+	println!("char: {}", a_char);
 	scanner.add_to_lexeme(a_char);
 	scanner.print_lexeme();
 
 	let newline:char = "\n".parse().unwrap();
 	println!("check {} this", newline);
 
+	let a_string = "new".to_string();
+	let is_key = scanner.is_keyword(a_string);
+	println!("is keyword: {} ", is_key);
+
+	let a_op = "{".chars().collect();
+	let is_op = scanner.is_operator(a_op);
+	println!("is operator: {} ", is_op);
+
+	println!("1 is a digit {}", 'a'.is_numeric());
+	println!("a is alpha {}", '1'.is_alphabetic());
+
+	let a_char = scanner.get_non_blank();
+	let is_op = a_char.unwrap() == "l".chars().next().unwrap();
+	println!("is equal: {} ", is_op);
+
+	scanner.stream_to_tokens();
+	println!("holy toledo");
 }
