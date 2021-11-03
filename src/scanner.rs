@@ -41,8 +41,8 @@ impl Scanner {
             tokens: Vec::new(),
             cur_char: ' ',
             cur_line_num: 0,
-            cur_char_pos: 0,
-            token_pos: 0
+            cur_char_pos: -1,
+            token_pos: -1
         }
     }
 
@@ -86,7 +86,6 @@ impl Scanner {
 
             }
             self.add_to_lexeme(self.cur_char);
-            // self.cur_char = self.char_stream.get_next_char().unwrap();
             self.add_token(TokenType::OPERATOR);
 
         } else {
@@ -103,7 +102,7 @@ impl Scanner {
     //
     pub fn add_token(&mut self, token_type: TokenType) -> () {
         let mut current_lexeme = &self.cur_lexeme;
-        let token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.token_pos);
+        let token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.cur_char_pos);
         self.tokens.push(token);
     }
 
@@ -159,14 +158,12 @@ impl Scanner {
     //
     pub fn get_non_blank(&mut self) -> Option<char> {
         let mut a_char: Option<char> = Option::from(self.cur_char);
-        // self.cur_char_pos = self.cur_char_pos  + 1;
 
         while (a_char.unwrap().is_whitespace()) || (a_char.unwrap() == "\n".parse().unwrap()){
             if a_char.unwrap() == "\n".parse().unwrap() {
                 self.cur_line_num = self.cur_line_num  + 1;
             }
 
-            self.cur_char_pos = self.cur_char_pos  + 1;
             a_char = self.char_stream.get_next_char();
         }
         a_char
@@ -176,7 +173,7 @@ impl Scanner {
     pub fn stream_to_tokens(&mut self) -> () {
         while {
             self.cur_char = self.get_non_blank().unwrap();
-            self.token_pos = self.cur_char_pos;
+            self.cur_char_pos = *self.char_stream.get_pos();
             self.lexer();
 
             self.char_stream.more_available()
