@@ -4,7 +4,7 @@
 mod token;
 mod character_stream;
 mod scanner;
-// mod parser;
+mod parser;
 //
 // use token::*;
 

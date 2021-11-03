@@ -13,10 +13,6 @@ use crate::token::TokenType;
 // The Scanner struct should have a method named get_next_token() or something similar that when
 // called, will return the next token as read from the .x file.
 
-fn another_function() {
-    println!(" Hello World.");
-}
-
 pub struct Scanner {
     // open the .x file as specified on the command line and tokenize the
     // text of the files into operators, intConstants, floatConstants, keywords, and identifiers.
@@ -54,10 +50,9 @@ impl Scanner {
 
     pub fn get_operators(&self) -> &Vec<String> { &self.operators }
 
-    pub fn get_world(&self) -> () { another_function() }
-
     pub fn print_lexeme(&self) -> () { println!("cur lexeme: {}", &self.cur_lexeme); }
 
+    //
     pub fn is_keyword(&self, a_string: String) -> bool {
         if self.keywords.contains(&a_string.to_string()) {
             true
@@ -66,6 +61,7 @@ impl Scanner {
         }
     }
 
+    //
     pub fn is_operator(&self, a_char: String) -> bool {
         if self.operators.contains(&a_char.to_string()) {
             true
@@ -74,6 +70,7 @@ impl Scanner {
         }
     }
 
+    //
     pub fn look_up(&mut self) -> () {
         if self.is_operator(self.cur_char.to_string()){
 
@@ -89,7 +86,7 @@ impl Scanner {
 
             }
             self.add_to_lexeme(self.cur_char);
-            self.cur_char = self.char_stream.get_next_char().unwrap();
+            // self.cur_char = self.char_stream.get_next_char().unwrap();
             self.add_token(TokenType::OPERATOR);
 
         } else {
@@ -98,16 +95,19 @@ impl Scanner {
         }
     }
 
+    //
     pub fn add_to_lexeme(&mut self, char_to_add: char) -> () {
         self.cur_lexeme.push(char_to_add);
     }
 
+    //
     pub fn add_token(&mut self, token_type: TokenType) -> () {
         let mut current_lexeme = &self.cur_lexeme;
         let token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.token_pos);
         self.tokens.push(token);
     }
 
+    //
     pub fn lexer(&mut self) -> () {
         if self.cur_char.is_alphabetic() {
             while {
@@ -150,15 +150,16 @@ impl Scanner {
         } else {
             self.look_up();
             // implement eof character
-            //self.cur_char = self.char_stream.get_next_char().unwrap();
+            self.cur_char = self.char_stream.get_next_char().unwrap();
         };
 
         self.cur_lexeme = "".to_string();
     }
 
+    //
     pub fn get_non_blank(&mut self) -> Option<char> {
-        let mut a_char =  self.char_stream.get_next_char();
-        self.cur_char_pos = self.cur_char_pos  + 1;
+        let mut a_char: Option<char> = Option::from(self.cur_char);
+        // self.cur_char_pos = self.cur_char_pos  + 1;
 
         while (a_char.unwrap().is_whitespace()) || (a_char.unwrap() == "\n".parse().unwrap()){
             if a_char.unwrap() == "\n".parse().unwrap() {
@@ -171,6 +172,7 @@ impl Scanner {
         a_char
     }
 
+    //
     pub fn stream_to_tokens(&mut self) -> () {
         while {
             self.cur_char = self.get_non_blank().unwrap();
@@ -181,6 +183,7 @@ impl Scanner {
         } {};
     }
 
+    //
     pub fn get_next_token(&mut self) -> &Token {
         let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
         self.tokens.push(a_token);
