@@ -11,6 +11,7 @@ mod parser;
 use std::io::prelude::*;
 use std::fs::File;
 use crate::character_stream::CharStream;
+use crate::parser::Parser;
 use crate::scanner::Scanner;
 
 
@@ -30,8 +31,8 @@ fn main() {
 	let mut scanner: Scanner = Scanner::new(stream, keywords, operators);
 	scanner.stream_to_tokens();
 
-	// while stream.more_available() {
-	// 	let a_char = stream.get_next_char();
-	// }
+	let parser = Parser::new(scanner);
+	parser.create_file("example2.xhtml");
+
 	println!("holy toledo");
 }

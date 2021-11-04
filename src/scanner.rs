@@ -1,6 +1,7 @@
-use test::Options;
+use std::borrow::{Borrow, BorrowMut};
+// use test::Options;
 use crate::character_stream::CharStream;
-use crate::token::Token;
+use crate::token::{from_str, Token};
 use crate::token::TokenType;
 
 // TODO: add underscore for words and negation for numbers
@@ -11,11 +12,12 @@ pub struct Scanner {
     char_stream: CharStream,
     cur_lexeme: String,
     prev_lexeme: String,
-    tokens: Vec<Token>,
+    pub(crate) tokens: Vec<Token>,
     cur_char: char,
     cur_line_num: i32,
     cur_char_pos: i32,
-    token_pos: i32
+    token_pos: i32,
+    num_tokens: i32
 }
 
 impl Scanner {
@@ -31,13 +33,20 @@ impl Scanner {
             cur_char: ' ',
             cur_line_num: 0,
             cur_char_pos: -1,
-            token_pos: -1
+            token_pos: -1,
+            num_tokens: 0
         }
     }
 
     pub fn get_keywords(&self) -> &Vec<String> { &self.keywords }
 
     pub fn get_operators(&self) -> &Vec<String> { &self.operators }
+
+    pub fn get_tokens(self) -> Vec<Token> { self.tokens }
+
+    pub fn get_token_pos(self) -> i32 { self.token_pos }
+
+    pub fn get_token_num(self) -> i32 { self.tokens.len() as i32 }
 
     pub fn print_lexeme(&self) -> () { println!("cur lexeme: {}", &self.cur_lexeme); }
 
@@ -91,7 +100,7 @@ impl Scanner {
     /* add new token to vector */
     pub fn add_token(&mut self, token_type: TokenType) -> () {
         let mut current_lexeme = &self.cur_lexeme;
-        let token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.cur_char_pos);
+        let mut token = Token::new(current_lexeme.to_string(), token_type, self.cur_line_num, self.cur_char_pos);
         self.tokens.push(token);
     }
 
@@ -167,15 +176,56 @@ impl Scanner {
 
             self.char_stream.more_available()
         } {};
+
+        self.num_tokens = self.tokens.len() as i32;
+    }
+
+    pub fn more_tokens_available(&self) -> bool {
+        if self.token_pos < (self.num_tokens - 1) {
+            true
+        } else {
+            false
+        }
     }
 
     /* get the next token from the token vector */
-    pub fn get_next_token(&mut self) -> &Token {
-        let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
-        self.tokens.push(a_token);
-        let pos: usize = self.token_pos as usize;
-        let next_token = &self.tokens[pos];
-        self.token_pos = self.token_pos + 1;
-        next_token
+    pub fn get_next_token(& mut self) -> Token {
+        if self.more_tokens_available() {
+            // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
+            // self.tokens.push(a_token);
+            self.token_pos = self.token_pos + 1;
+            let pos: usize = self.token_pos as usize;
+            let next_token_at = &self.tokens[pos];
+
+            let text = next_token_at.get_text().parse();
+            let token_type = next_token_at.get_type().as_str();
+            let line_num = next_token_at.get_line_number();
+            let char_pos = next_token_at.get_char_pos();
+
+            let next_token: Token = Token::new(text.unwrap(), from_str(token_type), line_num, char_pos);
+            next_token
+
+        } else {
+            Token::new("".to_string(), TokenType::NONE, -1, -1)
+        }
+
+    }
+
+    pub fn get_ith_token(&self, i: i32) -> Token {
+        if i < self.num_tokens {
+            let pos: usize = i as usize;
+            let next_token_at = &self.tokens[pos];
+
+            let text = next_token_at.get_text().parse();
+            let token_type = next_token_at.get_type().as_str();
+            let line_num = next_token_at.get_line_number();
+            let char_pos = next_token_at.get_char_pos();
+
+            let return_token: Token = Token::new(text.unwrap(), from_str(token_type), line_num, char_pos);
+            return_token
+        } else {
+            Token::new("".to_string(), TokenType::NONE, -1, -1)
+        }
+
     }
 }

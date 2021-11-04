@@ -23,10 +23,24 @@ impl TokenType {
             TokenType::INVALID => "Invalid",
             TokenType::IDENTIFIER => "Identifier"
         }   
-    }   
+    }
+
 }
 
-
+pub fn from_str(s: &str) -> TokenType {
+    match s {
+        "None" => TokenType::NONE,
+        "IntConstant" => TokenType::INTCONSTANT,
+        "FloatConstant" => TokenType::FLOATCONSTANT,
+        "Operator" => TokenType::OPERATOR,
+        "Keyword" => TokenType::KEYWORD,
+        "Variable" => TokenType::VARIABLE,
+        "Function" => TokenType::FUNCTION,
+        "Invalid" => TokenType::INVALID,
+        "Identifier" => TokenType::IDENTIFIER,
+        _ => TokenType::INVALID
+    }
+}
 
 pub struct Token {
     text: String,
@@ -59,5 +73,7 @@ impl Token {
 
     pub fn get_char_pos(&self) -> i32 {
         self.char_position
-    }   
+    }
+
+
 }
