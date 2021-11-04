@@ -106,23 +106,25 @@ impl Parser {
         file_string.push_str(&*start_file());
 
         let mut cur_line = 0;
-        let mut num_toks = 20;
+        let mut num_toks = self.scanner.tokens.len();
         for i in 0..num_toks {
             let pos: usize = i as usize;
             let tok = &self.scanner.tokens[pos];
 
-            let mut elem_str = "<font color=\"".to_string();
+            let mut elem_str = "".to_string();
+
+            if tok.get_line_number() > cur_line {
+                elem_str.push_str("<br />");
+                cur_line = tok.get_line_number() + 1;
+            }
+
+            elem_str.push_str(" <font color=\"");
             let color = get_color(tok.get_type());
             elem_str.push_str(color);
             elem_str.push_str("\"><b>");
             let text = tok.get_text();
             elem_str.push_str(text);
             elem_str.push_str("</b></font>");
-
-            if tok.get_line_number() > cur_line {
-                elem_str.push_str("<br />");
-                cur_line = cur_line + 1;
-            }
 
             file_string.push_str(elem_str.as_str())
         }
@@ -233,47 +235,19 @@ impl Parser {
         // ( (expression) ) | constant | ( identifier [ ([expression ]{, expression}]) ] )
     }
 
-    pub fn relation_operator(&self) -> bool {
+    pub fn relation_operator(&self) -> () {
         // (==) | < | > | (<=) | (>=) | (!=)
 
-        let rel_operators = vec!["==", "<", ">", "<=", ">=", "!="];
-        if self.cur_token.get_type().as_str() == "Operator" {
-            if rel_operators.contains(&self.cur_token.get_text()) {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
     }
 
-    pub fn add_operator(&self) -> bool {
+    pub fn add_operator(&self) -> () {
         // + | -
 
-        if self.cur_token.get_type().as_str() == "Operator" {
-            if (self.cur_token.get_text() == "+") || (self.cur_token.get_text() == "-") {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
     }
 
-    pub fn mult_operator(&self) -> bool {
+    pub fn mult_operator(&self) -> () {
         // * | /
 
-        if self.cur_token.get_type().as_str() == "Operator" {
-            if (self.cur_token.get_text() == "*") || (self.cur_token.get_text() == "*") {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
     }
 
 }

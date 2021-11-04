@@ -4,7 +4,7 @@ use crate::character_stream::CharStream;
 use crate::token::{from_str, Token};
 use crate::token::TokenType;
 
-// TODO: add underscore for words and negation for numbers
+// TODO: add negation for numbers
 
 pub struct Scanner {
     keywords: Vec<String>,
@@ -106,12 +106,13 @@ impl Scanner {
 
     /* get next lexeme in char stream */
     pub fn lexer(&mut self) -> () {
-        if self.cur_char.is_alphabetic() {
+        let underscore = "_".chars().next().unwrap();
+        if self.cur_char.is_alphabetic() || self.cur_char ==  underscore {
             while {
                 self.add_to_lexeme(self.cur_char);
                 self.cur_char = self.char_stream.get_next_char().unwrap();
 
-                self.cur_char.is_alphabetic()
+                self.cur_char.is_alphabetic() || self.cur_char ==  underscore
             } {};
 
             let mut current_lexeme = &self.cur_lexeme;
@@ -209,6 +210,27 @@ impl Scanner {
             Token::new("".to_string(), TokenType::NONE, -1, -1)
         }
 
+    }
+
+    pub fn peak_next_token(&self) -> Token {
+        if self.more_tokens_available() {
+            // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
+            // self.tokens.push(a_token);
+            let peak_pos = self.token_pos + 1;
+            let pos: usize = self.token_pos as usize;
+            let next_token_at = &self.tokens[pos];
+
+            let text = next_token_at.get_text().parse();
+            let token_type = next_token_at.get_type().as_str();
+            let line_num = next_token_at.get_line_number();
+            let char_pos = next_token_at.get_char_pos();
+
+            let next_token: Token = Token::new(text.unwrap(), from_str(token_type), line_num, char_pos);
+            next_token
+
+        } else {
+            Token::new("".to_string(), TokenType::NONE, -1, -1)
+        }
     }
 
     pub fn get_ith_token(&self, i: i32) -> Token {
