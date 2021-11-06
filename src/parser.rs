@@ -6,6 +6,7 @@ use crate::token::TokenType;
 
 use std::fs::File;
 use std::io::Write;
+use crate::token::TokenType::IDENTIFIER;
 
 pub fn start_file() -> String {
     let start_file = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">  <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">  <head>  <title> X Formatted file</title>  </head>  <body bgcolor=\"navy\" text=\"yellow\" link=\"yellow\" vlink=\"yellow\">  <font face=\"Courier New\">";
@@ -163,124 +164,496 @@ impl Parser {
         self.program();
     }
 
-    pub fn program(&self) -> () {
+    pub fn throw_error(& self) -> () {
+
+    }
+
+    pub fn program(&mut self) -> () {
         // {declaration} main_declaration {function_definition}
 
-        while self.scanner.is_keyword(self.cur_token.get_text().to_string()) && self.cur_token.get_text() != "main" {
+        while self.scanner.is_keyword(self.cur_token.get_text().to_string()) && self.scanner.peak_next_token().get_text() != "main" {
             self.declaration();
+            self.get_next();
         }
 
-        if self.cur_token.get_text() == "main" {
-            self.main_declaration();
-        }
+        self.main_declaration();
+
+        self.get_next();
 
         while self.scanner.more_tokens_available() {
             self.function_definition();
         }
     }
 
-    pub fn declaration(&self) -> () {
+    pub fn declaration(&mut self) -> bool {
         // declaration_type (variable declaration | function declaration)
 
+        self.declaration_type();
+
+        self.get_next();
+
+        if self.cur_token.get_text() == "=" || self.cur_token.get_text() == ";" {
+            self.variable_declaration();
+        } else {
+            self.function_declaration();
+        }
+
+        return true
     }
 
-    pub fn main_declaration(&self) -> () {
+    pub fn main_declaration(&mut self) -> () {
         // void main ( ) block
+
+        if self.cur_token.get_text() == "void" {
+            self.get_next();
+
+            if self.cur_token.get_text() == "main" {
+                self.get_next();
+
+                if self.cur_token.get_text() == "(" {
+                    self.get_next();
+
+                    if self.cur_token.get_text() == ")" {
+                        self.get_next();
+
+                        self.block();
+                    }
+                }
+            }
+        }
     }
 
-    pub fn function_definition(&self) -> () {
+    pub fn function_definition(&mut self) -> () {
         // declaration_type parameter_block block
+
+        self.declaration_type();
+        self.get_next();
+
+        self.parameter_block();
+        self.get_next();
+
+        self.block();
+        self.get_next();
     }
 
-    pub fn declaration_type(&self) -> () {
+    pub fn declaration_type(&mut self) -> () {
         // data_type identifier
+
+        self.data_type();
+
+        self.get_next();
+
+        if !self.identifier() { // terminal
+            self.throw_error();
+        }
     }
 
-    pub fn variable_declaration(&self) -> () {
-        // [= constant]
+    pub fn variable_declaration(&mut self) -> () {
+        // [= constant] ;
+
+        if self.cur_token.get_text() != ";" {
+            if self.cur_token.get_text() == "="{
+                self.get_next();
+                self.constant();
+                self.get_next();
+            }
+        } else if self.cur_token.get_text() == ";"{
+            self.get_next();
+        } else {
+            self.throw_error();
+        };
     }
 
-    pub fn function_declaration(&self) -> () {
-        // parameter_block;
+    pub fn function_declaration(&mut self) -> () {
+        // parameter_block ;
+
+        self.parameter_block();
+        self.get_next();
+
+        if self.cur_token.get_text() == ";" {
+            self.get_next();
+        } else {
+            self.throw_error();
+        };
     }
 
-    pub fn block(&self) -> () {
+    pub fn block(&mut self) -> () {
         // { {declaration} {statement} {function_definition} }
+
+        if self.cur_token.get_text() == "{" {
+            self.get_next();
+
+            if self.declaration() {
+                self.get_next();
+            }
+
+            if self.identifier() {
+                self.statement();
+                self.get_next();
+            }
+
+            if self.float_type() || self.integer_type() {
+                self.function_definition();
+                self.get_next();
+            }
+
+            if self.cur_token.get_text() != "}" {
+                self.throw_error();
+            }
+
+        } else {
+            self.throw_error();
+        }
     }
 
-    pub fn parameter_block(&self) -> () {
+    pub fn parameter_block(&mut self) -> () {
         // ( [parameter {, parameter} ] )
+
+        if self.cur_token.get_text() == "(" {
+            self.get_next();
+
+            if self.integer_type() || self.float_type() {
+                self.parameter();
+                self.get_next();
+
+                while self.cur_token.get_text() == "," {
+                    self.get_next();
+                    self.parameter();
+                    self.get_next();
+                }
+            }
+
+            if self.cur_token.get_text() != ")" {
+                self.throw_error();
+            }
+
+        } else {
+            self.throw_error();
+        };
     }
 
-    pub fn data_type(&self) -> () {
+    pub fn data_type(&mut self) -> () {
         // integer_type | float_type
+
+        if !self.integer_type() || !self.float_type() {
+            self.throw_error();
+        }
     }
 
-    pub fn constant(&self) -> () {
+    pub fn constant(&self) -> bool {
         // int_constant | float_constant
+
+        if self.cur_token.get_type().as_str() == "IntConstant" {
+            return true;
+
+        } else if self.cur_token.get_type().as_str() == "FloatConstant"{
+            return true;
+        }
+        false
     }
 
-    pub fn statement(&self) -> () {
+    pub fn statement(&mut self) -> () {
         // assignment | while_loop | if_statement | return_statement | (expression ;)
+
+        if self.cur_token.get_text() == "while" {
+            self.while_loop();
+
+        } else if self.cur_token.get_text() == "if" {
+            self.if_statement();
+
+        } else if self.cur_token.get_text() == "return" {
+            self.return_statement();
+
+        } else if self.identifier() & (self.scanner.peak_next_token().get_text() == "=") {
+            self.assignment();
+
+        } else {
+            self.expression();
+            self.get_next();
+
+            if self.cur_token.get_text() == ";" {
+                self.get_next();
+            } else {
+                self.throw_error();
+            };
+        };
     }
 
-    pub fn parameter(&self) -> () {
+    pub fn parameter(&mut self) -> () {
         // data_type identifier
+
+        self.data_type();
+        self.get_next();
+
+        if self.identifier() {
+            self.get_next();
+
+        } else {
+            self.throw_error();
+        }
     }
 
-    pub fn integer_type(&self) -> () {
+    pub fn integer_type(&mut self) -> bool {
         // [unsigned] (char | short | int | long)
+
+        let types = ["char", "short", "int", "long"];
+        if self.cur_token.get_text() == "unsigned" {
+            self.get_next();
+            if types.contains(&self.cur_token.get_text()) {
+                return true;
+            }
+        } else if types.contains(&self.cur_token.get_text()){
+            return true;
+        }
+        false
     }
 
-    pub fn float_type(&self) -> () {
+    pub fn float_type(&self) -> bool {
         // float | double
+
+        if ["float", "double"].contains(&self.cur_token.get_text()) {
+            return true;
+        }
+        false
     }
 
-    pub fn assignment(&self) -> () {
+    pub fn assignment(&mut self) -> () {
         // identifier = {identifier = } expression;
+
+        if self.identifier() {
+            self.get_next();
+
+            if self.cur_token.get_text() == "=" {
+                self.get_next();
+
+                while self.identifier() {
+                    self.get_next();
+
+                    if self.cur_token.get_text() == "=" {
+                        self.get_next();
+                    } else {
+                        self.throw_error();
+                    }
+                }
+
+                self.expression();
+                self.get_next();
+
+                if self.cur_token.get_text() == ";" {
+                    self.get_next();
+                } else {
+                    self.throw_error();
+                }
+
+            }
+        }
     }
 
-    pub fn while_loop(&self) -> () {
+    pub fn while_loop(&mut self) -> () {
         // while ( expression ) block
+
+        if self.cur_token.get_text() == "while" {
+            self.get_next();
+
+            if self.cur_token.get_text() == "(" {
+                self.get_next();
+
+                self.expression();
+                self.get_next();
+
+                if self.cur_token.get_text() == ")" {
+                    self.get_next();
+                    self.block();
+
+                } else {
+                    self.throw_error();
+                }
+
+            } else {
+                self.throw_error();
+            }
+
+        } else {
+            self.throw_error();
+        };
     }
 
-    pub fn if_statement(&self) -> () {
+    pub fn if_statement(&mut self) -> () {
         // if ( expression ) block
+
+        if self.cur_token.get_text() == "if" {
+            self.get_next();
+
+            if self.cur_token.get_text() == "(" {
+                self.get_next();
+
+                self.expression();
+                self.get_next();
+
+                if self.cur_token.get_text() == ")" {
+                    self.get_next();
+                    self.block();
+
+                } else {
+                    self.throw_error();
+                }
+
+            } else {
+                self.throw_error();
+            }
+
+        } else {
+            self.throw_error();
+        };
+
     }
 
-    pub fn return_statement(&self) -> () {
+    pub fn return_statement(&mut self) -> () {
         // return expression ;
+
+        if self.cur_token.get_text() == "return" {
+            self.get_next();
+            self.expression();
+            self.get_next();
+
+            if self.cur_token.get_text() == ";" {
+                self.get_next();
+
+            } else {
+                self.throw_error();
+            }
+        } else {
+            self.throw_error();
+        }
     }
 
-    pub fn expression(&self) -> () {
+    pub fn expression(&mut self) -> () {
         // simple_expression [ relation_operator simple_expression]
+
+        self.simple_expression();
+        self.get_next();
+
+        if self.relation_operator() {
+            self.get_next();
+            self.simple_expression();
+            self.get_next();
+        }
     }
 
-    pub fn simple_expression(&self) -> () {
+    pub fn simple_expression(& mut self) -> () {
         // term { add_operator term }
+
+        self.term();
+        self.get_next();
+
+        while self.add_operator() {
+            self.get_next();
+            self.term();
+            self.get_next();
+        }
     }
 
-    pub fn term(&self) -> () {
+    pub fn term(& mut self) -> () {
         // factor { mult_operator factor }
+
+        self.factor();
+        self.get_next();
+
+        while self.mult_operator() {
+            self.get_next();
+            self.factor();
+            self.get_next();
+        }
     }
 
-    pub fn factor(&self) -> () {
+    pub fn factor(& mut self) -> () {
         // ( (expression) ) | constant | ( identifier [ ([expression ]{, expression}]) ] )
+
+        if self.constant() {
+            self.get_next();
+
+        } else if self.cur_token.get_text() == "(" {
+            self.get_next();
+            self.expression();
+            self.get_next();
+
+            if self.cur_token.get_text() == ")" {
+                self.get_next();
+            } else {
+                self.throw_error();
+            }
+
+        } else if self.identifier() {
+            self.get_next();
+
+            if self.cur_token.get_text() == "(" {
+                self.get_next();
+
+                if self.cur_token.get_text() != ")" {
+                    self.expression();
+                    self.get_next();
+
+                    if self.cur_token.get_text() != ")" {
+                        if self.cur_token.get_text() == "," {
+                            while self.cur_token.get_text() == "," {
+                                self.get_next();
+                                self.expression();
+                                self.get_next();
+                            }
+                        } else {
+                            self.throw_error();
+                        }
+                    }
+                }
+
+                if self.cur_token.get_text() == ")" {
+                    self.get_next();
+                } else {
+                    self.throw_error();
+                }
+            } else {
+                self.throw_error();
+            }
+        } else {
+            self.throw_error()
+        }
+
     }
 
-    pub fn relation_operator(&self) -> () {
+    pub fn relation_operator(&self) -> bool {
         // (==) | < | > | (<=) | (>=) | (!=)
 
+        if ["==", "<", ">", "<=", ">=", "!="].contains(&self.cur_token.get_text()) {
+            return true;
+        }
+        false
     }
 
-    pub fn add_operator(&self) -> () {
+    pub fn add_operator(&self) -> bool {
         // + | -
 
+        if ["+", "-"].contains(&self.cur_token.get_text()) {
+            return true;
+        }
+        false
     }
 
-    pub fn mult_operator(&self) -> () {
+    pub fn mult_operator(&self) -> bool {
         // * | /
 
+        if ["*", "/"].contains(&self.cur_token.get_text()) {
+            return true;
+        }
+        false
+    }
+
+    pub fn identifier(&self) -> bool {
+        // is an identifier
+
+        if self.cur_token.get_type().as_str() == "Identifier" {
+            return true;
+        }
+        false
     }
 
 }
