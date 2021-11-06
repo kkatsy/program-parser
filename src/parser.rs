@@ -107,24 +107,44 @@ impl Parser {
 
         let mut cur_line = 0;
         let mut num_toks = self.scanner.tokens.len();
+        let mut num_tabs = 0;
         for i in 0..num_toks {
             let pos: usize = i as usize;
             let tok = &self.scanner.tokens[pos];
 
             let mut elem_str = "".to_string();
 
-            if tok.get_line_number() > cur_line {
+            if tok.get_line_number() >= cur_line {
                 elem_str.push_str("<br />");
+            }
+
+            let text = tok.get_text();
+
+            if text == "{" {
+                num_tabs = num_tabs + 1;
+            }
+            if text == "}" {
+                num_tabs = num_tabs - 1;
+            }
+
+            if tok.get_line_number() >= cur_line {
                 cur_line = tok.get_line_number() + 1;
+
+                for i in 0..num_tabs {
+                    elem_str.push_str("&nbsp;&nbsp;&nbsp;");
+                }
             }
 
             elem_str.push_str(" <font color=\"");
+
             let color = get_color(tok.get_type());
             elem_str.push_str(color);
-            elem_str.push_str("\"><b>");
-            let text = tok.get_text();
+
+            elem_str.push_str("\">");
+            elem_str.push_str("<b>");
             elem_str.push_str(text);
-            elem_str.push_str("</b></font>");
+            elem_str.push_str("</b>");
+            elem_str.push_str("</font>");
 
             file_string.push_str(elem_str.as_str())
         }
@@ -134,16 +154,29 @@ impl Parser {
         f.write_all(file_string.as_bytes()).expect("Unable to write data");
     }
 
+    pub fn get_next(&mut self) -> () {
+        self.cur_token = self.scanner.get_next_token();
+    }
 
     pub fn parse_tokens(&mut self) -> () {
-        self.cur_token = self.scanner.get_next_token();
-        let huh = self.scanner.more_tokens_available();
-
+        self.get_next();
+        self.program();
     }
 
     pub fn program(&self) -> () {
         // {declaration} main_declaration {function_definition}
 
+        while self.scanner.is_keyword(self.cur_token.get_text().to_string()) && self.cur_token.get_text() != "main" {
+            self.declaration();
+        }
+
+        if self.cur_token.get_text() == "main" {
+            self.main_declaration();
+        }
+
+        while self.scanner.more_tokens_available() {
+            self.function_definition();
+        }
     }
 
     pub fn declaration(&self) -> () {
