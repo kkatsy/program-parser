@@ -6,7 +6,6 @@ use crate::token::TokenType;
 
 use std::fs::File;
 use std::io::Write;
-use crate::token::TokenType::IDENTIFIER;
 
 pub fn start_file() -> String {
     let start_file = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">  <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">  <head>  <title> X Formatted file</title>  </head>  <body bgcolor=\"navy\" text=\"yellow\" link=\"yellow\" vlink=\"yellow\">  <font face=\"Courier New\">";
@@ -82,8 +81,6 @@ pub struct Parser {
     error_rule: String
 }
 
-// This struct should implement one method per EBNF rule
-
 impl Parser {
     pub fn new(s: Scanner) -> Parser {
 
@@ -99,7 +96,6 @@ impl Parser {
             error_rule: "".to_string()
         }
     }
-
 
     pub fn create_file(&self, file_name: &str) -> () {
 
@@ -142,9 +138,13 @@ impl Parser {
             elem_str.push_str(color);
 
             elem_str.push_str("\">");
-            elem_str.push_str("<b>");
+            if color != "yellow" && color!= "orange" {
+                elem_str.push_str("<b>");
+            }
             elem_str.push_str(text);
-            elem_str.push_str("</b>");
+            if color != "yellow" && color!= "orange" {
+                elem_str.push_str("</b>");
+            }
             elem_str.push_str("</font>");
 
             file_string.push_str(elem_str.as_str())
