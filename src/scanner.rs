@@ -217,7 +217,7 @@ impl Scanner {
             // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
             // self.tokens.push(a_token);
             let peak_pos = self.token_pos + 1;
-            let pos: usize = self.token_pos as usize;
+            let pos: usize = peak_pos as usize;
             let next_token_at = &self.tokens[pos];
 
             let text = next_token_at.get_text().parse();

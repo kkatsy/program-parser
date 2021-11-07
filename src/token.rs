@@ -10,6 +10,22 @@ pub enum TokenType {
     IDENTIFIER
 }
 
+pub fn string_to_token(token_string: &str) -> TokenType {
+    let the_token_string = token_string;
+    match the_token_string {
+        "None" => TokenType::NONE,
+        "IntConstant" => TokenType::INTCONSTANT,
+        "FloatConstant" => TokenType::FLOATCONSTANT,
+        "Operator" => TokenType::OPERATOR,
+        "Keyword" => TokenType::KEYWORD,
+        "Variable" => TokenType::VARIABLE,
+        "Function" => TokenType::FUNCTION,
+        "Invalid" => TokenType::INVALID,
+        "Identifier" => TokenType::IDENTIFIER,
+        _ => TokenType::NONE
+    }
+}
+
 impl TokenType {
     pub fn as_str(&self) -> &'static str {
         match &self {
@@ -74,6 +90,5 @@ impl Token {
     pub fn get_char_pos(&self) -> i32 {
         self.char_position
     }
-
 
 }

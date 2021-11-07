@@ -1,7 +1,7 @@
 // recursive descent parser
 
 use crate::scanner::Scanner;
-use crate::token::Token;
+use crate::token::{string_to_token, Token};
 use crate::token::TokenType;
 
 use std::fs::File;
@@ -107,11 +107,11 @@ impl Parser {
         file_string.push_str(&*start_file());
 
         let mut cur_line = 0;
-        let mut num_toks = self.scanner.tokens.len();
+        let mut num_toks = self.tokens.len();
         let mut num_tabs = 0;
         for i in 0..num_toks {
             let pos: usize = i as usize;
-            let tok = &self.scanner.tokens[pos];
+            let tok = &self.tokens[pos];
 
             let mut elem_str = "".to_string();
 
@@ -155,7 +155,25 @@ impl Parser {
         f.write_all(file_string.as_bytes()).expect("Unable to write data");
     }
 
+    pub fn set_new_type(&mut self, new_type: String) -> (){
+        let text = self.cur_token.get_text().to_string();
+        let line = self.cur_token.get_line_number();
+        let char_pos = self.cur_token.get_char_pos();
+        let mut token_type = string_to_token(new_type.as_str());
+
+        let edit_token = Token::new(text, token_type, line, char_pos);
+        self.cur_token = edit_token;
+    }
+
     pub fn get_next(&mut self) -> () {
+        let text = self.cur_token.get_text().to_string();
+        let line = self.cur_token.get_line_number();
+        let char_pos = self.cur_token.get_char_pos();
+        let token_type_string = self.cur_token.get_type().as_str();
+        let token_type = string_to_token(token_type_string);
+        let editToken = Token::new(text, token_type, line, char_pos);
+        self.tokens.push(editToken);
+
         self.cur_token = self.scanner.get_next_token();
     }
 
@@ -165,13 +183,14 @@ impl Parser {
     }
 
     pub fn throw_error(& self) -> () {
-
+        println!("mama");
     }
 
     pub fn program(&mut self) -> () {
         // {declaration} main_declaration {function_definition}
 
         while self.scanner.is_keyword(self.cur_token.get_text().to_string()) && self.scanner.peak_next_token().get_text() != "main" {
+            let peak = self.scanner.peak_next_token().get_text();
             self.declaration();
             self.get_next();
         }
@@ -185,20 +204,20 @@ impl Parser {
         }
     }
 
-    pub fn declaration(&mut self) -> bool {
+    pub fn declaration(&mut self) -> () {
         // declaration_type (variable declaration | function declaration)
 
         self.declaration_type();
 
-        self.get_next();
-
         if self.cur_token.get_text() == "=" || self.cur_token.get_text() == ";" {
+            self.set_new_type("Variable".to_string());
+            self.get_next();
             self.variable_declaration();
         } else {
+            self.set_new_type("Function".to_string());
+            self.get_next();
             self.function_declaration();
         }
-
-        return true
     }
 
     pub fn main_declaration(&mut self) -> () {
@@ -240,7 +259,6 @@ impl Parser {
         // data_type identifier
 
         self.data_type();
-
         self.get_next();
 
         if !self.identifier() { // terminal
@@ -255,7 +273,7 @@ impl Parser {
             if self.cur_token.get_text() == "="{
                 self.get_next();
                 self.constant();
-                self.get_next();
+                // self.get_next();
             }
         } else if self.cur_token.get_text() == ";"{
             self.get_next();
@@ -270,9 +288,7 @@ impl Parser {
         self.parameter_block();
         self.get_next();
 
-        if self.cur_token.get_text() == ";" {
-            self.get_next();
-        } else {
+        if self.cur_token.get_text() != ";" {
             self.throw_error();
         };
     }
@@ -283,8 +299,12 @@ impl Parser {
         if self.cur_token.get_text() == "{" {
             self.get_next();
 
-            if self.declaration() {
-                self.get_next();
+            // if self.declaration() {
+            //     self.get_next();
+            // }
+            while self.integer_type() || self.float_type() {
+                self.declaration();
+                //self.get_next();
             }
 
             if self.identifier() {
@@ -335,7 +355,7 @@ impl Parser {
     pub fn data_type(&mut self) -> () {
         // integer_type | float_type
 
-        if !self.integer_type() || !self.float_type() {
+        if !self.integer_type() & !self.float_type() {
             self.throw_error();
         }
     }
@@ -385,11 +405,9 @@ impl Parser {
         self.data_type();
         self.get_next();
 
-        if self.identifier() {
-            self.get_next();
+        if !self.identifier() {
+           self.throw_error();
 
-        } else {
-            self.throw_error();
         }
     }
 
@@ -426,7 +444,7 @@ impl Parser {
             if self.cur_token.get_text() == "=" {
                 self.get_next();
 
-                while self.identifier() {
+                while self.identifier() & (self.scanner.peak_next_token().get_text() == "="){
                     self.get_next();
 
                     if self.cur_token.get_text() == "=" {
@@ -569,17 +587,12 @@ impl Parser {
     pub fn factor(& mut self) -> () {
         // ( (expression) ) | constant | ( identifier [ ([expression ]{, expression}]) ] )
 
-        if self.constant() {
-            self.get_next();
-
-        } else if self.cur_token.get_text() == "(" {
+        if self.cur_token.get_text() == "(" {
             self.get_next();
             self.expression();
             self.get_next();
 
-            if self.cur_token.get_text() == ")" {
-                self.get_next();
-            } else {
+            if self.cur_token.get_text() != ")" {
                 self.throw_error();
             }
 
@@ -614,7 +627,7 @@ impl Parser {
             } else {
                 self.throw_error();
             }
-        } else {
+        } else if !self.constant(){
             self.throw_error()
         }
 

@@ -25,7 +25,9 @@ fn main() {
 	let mut scanner: Scanner = Scanner::new(stream, keywords, operators);
 	scanner.stream_to_tokens();
 
-	let parser = Parser::new(scanner);
+	let mut parser = Parser::new(scanner);
+
+	parser.parse_tokens();
 	parser.create_file("example2.xhtml");
 
 	println!("holy toledo");
