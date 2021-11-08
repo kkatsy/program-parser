@@ -23,7 +23,7 @@ pub fn get_color(t: &TokenType) -> &'static str {
     if t.as_str() == "Function" {
         color = "orange";
     } else if t.as_str() == "Variable" {
-        color = "orange";
+        color = "yellow";
     } else if t.as_str() == "FloatConstant" {
         color = "aqua";
     } else if t.as_str() == "IntConstant" {
@@ -201,6 +201,7 @@ impl Parser {
 
         while self.scanner.more_tokens_available() {
             self.function_definition();
+            self.get_next();
         }
     }
 
@@ -208,14 +209,16 @@ impl Parser {
         // declaration_type (variable declaration | function declaration)
 
         self.declaration_type();
-
-        if self.cur_token.get_text() == "=" || self.cur_token.get_text() == ";" {
+        if self.scanner.peak_next_token().get_text() == "=" || self.scanner.peak_next_token().get_text() == ";" {
             self.set_new_type("Variable".to_string());
-            self.get_next();
-            self.variable_declaration();
         } else {
             self.set_new_type("Function".to_string());
-            self.get_next();
+        }
+        self.get_next();
+
+        if self.cur_token.get_text() == "=" || self.cur_token.get_text() == ";" {
+            self.variable_declaration();
+        } else {
             self.function_declaration();
         };
     }
@@ -246,13 +249,14 @@ impl Parser {
         // declaration_type parameter_block block
 
         self.declaration_type();
+        self.set_new_type("Function".to_string());
         self.get_next();
 
         self.parameter_block();
         self.get_next();
 
         self.block();
-        self.get_next();
+        // self.get_next();
     }
 
     pub fn declaration_type(&mut self) -> () {
@@ -299,9 +303,7 @@ impl Parser {
                 self.constant();
                 // self.get_next();
             }
-        } else if self.cur_token.get_text() == ";"{
-            self.get_next();
-        } else {
+        } else if self.cur_token.get_text() != ";"{
             self.throw_error();
         };
     }
@@ -342,7 +344,7 @@ impl Parser {
                 self.get_next();
             }
 
-            while self.cur_token.get_text() != "}" {
+            while (self.cur_token.get_text() != "}") && (self.cur_token.get_type().as_str() != "None") {
                 if self.integer_type() || self.float_type() {
                     // func def
                     self.function_definition();
@@ -426,9 +428,7 @@ impl Parser {
             self.expression();
             self.get_next();
 
-            if self.cur_token.get_text() == ";" {
-                self.get_next();
-            } else {
+            if self.cur_token.get_text() != ";" {
                 self.throw_error();
             };
         };
@@ -476,6 +476,7 @@ impl Parser {
         // identifier = {identifier = } expression;
 
         if self.identifier() {
+            self.set_new_type("Variable".to_string());
             self.get_next();
 
             if self.cur_token.get_text() == "=" {
@@ -486,19 +487,15 @@ impl Parser {
 
                     if self.cur_token.get_text() == "=" {
                         self.get_next();
-                    } else {
-                        self.throw_error();
                     }
                 }
 
                 self.expression();
                 self.get_next();
 
-                if self.cur_token.get_text() == ";" {
-                    self.get_next();
-                } else {
+                if self.cur_token.get_text() != ";" {
                     self.throw_error();
-                }
+                };
 
             }
         }
@@ -571,10 +568,7 @@ impl Parser {
             self.expression();
             self.get_next();
 
-            if self.cur_token.get_text() == ";" {
-                self.get_next();
-
-            } else {
+            if self.cur_token.get_text() != ";" {
                 self.throw_error();
             }
         } else {
@@ -586,12 +580,10 @@ impl Parser {
         // simple_expression [ relation_operator simple_expression]
 
         self.simple_expression();
-        self.get_next();
 
-        if self.relation_operator() {
+        if ["==", "<", ">", "<=", ">=", "!="].contains(&self.scanner.peak_next_token().get_text()) {
             self.get_next();
             self.simple_expression();
-            self.get_next();
         }
     }
 
@@ -599,12 +591,10 @@ impl Parser {
         // term { add_operator term }
 
         self.term();
-        self.get_next();
 
-        while self.add_operator() {
+        while ["+", "-"].contains(&self.scanner.peak_next_token().get_text()) {
             self.get_next();
             self.term();
-            self.get_next();
         }
     }
 
@@ -612,12 +602,10 @@ impl Parser {
         // factor { mult_operator factor }
 
         self.factor();
-        self.get_next();
 
-        while self.mult_operator() {
+        while ["*", "/"].contains(&self.scanner.peak_next_token().get_text()) {
             self.get_next();
             self.factor();
-            self.get_next();
         }
     }
 
@@ -634,6 +622,7 @@ impl Parser {
             }
 
         } else if self.identifier() {
+            self.set_new_type("Function".to_string());
             self.get_next();
 
             if self.cur_token.get_text() == "(" {
@@ -656,9 +645,7 @@ impl Parser {
                     }
                 }
 
-                if self.cur_token.get_text() == ")" {
-                    self.get_next();
-                } else {
+                if self.cur_token.get_text() != ")" {
                     self.throw_error();
                 }
             } else {
