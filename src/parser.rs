@@ -301,9 +301,12 @@ impl Parser {
             if self.cur_token.get_text() == "="{
                 self.get_next();
                 self.constant();
-                // self.get_next();
+                self.get_next();
+                if self.cur_token.get_text() != ";" {
+                    self.throw_error()
+                }
             }
-        } else if self.cur_token.get_text() != ";"{
+        } else if self.cur_token.get_text() != ";" {
             self.throw_error();
         };
     }
@@ -583,6 +586,7 @@ impl Parser {
 
         if ["==", "<", ">", "<=", ">=", "!="].contains(&self.scanner.peak_next_token().get_text()) {
             self.get_next();
+            self.get_next();
             self.simple_expression();
         }
     }
@@ -594,6 +598,7 @@ impl Parser {
 
         while ["+", "-"].contains(&self.scanner.peak_next_token().get_text()) {
             self.get_next();
+            self.get_next();
             self.term();
         }
     }
@@ -604,6 +609,7 @@ impl Parser {
         self.factor();
 
         while ["*", "/"].contains(&self.scanner.peak_next_token().get_text()) {
+            self.get_next();
             self.get_next();
             self.factor();
         }
@@ -622,8 +628,12 @@ impl Parser {
             }
 
         } else if self.identifier() {
-            self.set_new_type("Function".to_string());
-            self.get_next();
+            if self.scanner.peak_next_token().get_text() == "(" {
+                self.set_new_type("Function".to_string());
+                self.get_next();
+            } else {
+                self.set_new_type("Variable".to_string());
+            }
 
             if self.cur_token.get_text() == "(" {
                 self.get_next();
@@ -648,9 +658,8 @@ impl Parser {
                 if self.cur_token.get_text() != ")" {
                     self.throw_error();
                 }
-            } else {
-                self.throw_error();
             }
+
         } else if !self.constant(){
             self.throw_error()
         }
