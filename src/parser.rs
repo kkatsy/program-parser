@@ -217,7 +217,7 @@ impl Parser {
             self.set_new_type("Function".to_string());
             self.get_next();
             self.function_declaration();
-        }
+        };
     }
 
     pub fn main_declaration(&mut self) -> () {
@@ -266,6 +266,30 @@ impl Parser {
         }
     }
 
+    pub fn is_declaration_type(&mut self) -> bool {
+        // data_type identifier
+
+        if self.float_type() {
+            if self.scanner.peak_next_token().get_type().as_str() == "Identifier" {
+                return true;
+            }
+        }
+
+        if self.integer_type() {
+            if self.cur_token.get_text() == "unsigned" {
+                // peak two ahead
+                if self.scanner.peak_nth_token(2).get_type().as_str() == "Identifier" {
+                    return true;
+                }
+            } else {
+                if self.scanner.peak_next_token().get_type().as_str() == "Identifier" {
+                    return true;
+                }
+            }
+        }
+        return false
+    }
+
     pub fn variable_declaration(&mut self) -> () {
         // [= constant] ;
 
@@ -299,22 +323,33 @@ impl Parser {
         if self.cur_token.get_text() == "{" {
             self.get_next();
 
-            // if self.declaration() {
-            //     self.get_next();
-            // }
-            while self.integer_type() || self.float_type() {
-                self.declaration();
-                //self.get_next();
-            }
+            while self.is_declaration_type() {
+                // declaration or func definition
+                let peak_token;
+                if self.cur_token.get_text() == "unsigned" {
+                    peak_token = self.scanner.peak_nth_token(3);
+                } else {
+                    peak_token = self.scanner.peak_nth_token(2);
+                }
 
-            if self.identifier() {
-                self.statement();
+                if peak_token.get_text() == "(" {
+                    // has to be func def
+                    self.function_definition();
+                } else {
+                    // has to be a declaration
+                    self.declaration();
+                }
                 self.get_next();
             }
 
-            if self.float_type() || self.integer_type() {
-                self.function_definition();
-                self.get_next();
+            while self.cur_token.get_text() != "}" {
+                if self.integer_type() || self.float_type() {
+                    // func def
+                    self.function_definition();
+                } else {
+                    self.statement();
+                }
+                self.get_next()
             }
 
             if self.cur_token.get_text() != "}" {
@@ -408,7 +443,9 @@ impl Parser {
         if !self.identifier() {
            self.throw_error();
 
-        }
+        } else {
+            self.set_new_type("Variable".to_string());
+        };
     }
 
     pub fn integer_type(&mut self) -> bool {

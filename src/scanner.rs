@@ -233,6 +233,27 @@ impl Scanner {
         }
     }
 
+    pub fn peak_nth_token(&self, n: i32) -> Token {
+        if self.more_tokens_available() {
+            // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
+            // self.tokens.push(a_token);
+            let peak_pos = self.token_pos + n;
+            let pos: usize = peak_pos as usize;
+            let next_token_at = &self.tokens[pos];
+
+            let text = next_token_at.get_text().parse();
+            let token_type = next_token_at.get_type().as_str();
+            let line_num = next_token_at.get_line_number();
+            let char_pos = next_token_at.get_char_pos();
+
+            let next_token: Token = Token::new(text.unwrap(), from_str(token_type), line_num, char_pos);
+            next_token
+
+        } else {
+            Token::new("".to_string(), TokenType::NONE, -1, -1)
+        }
+    }
+
     pub fn get_ith_token(&self, i: i32) -> Token {
         if i < self.num_tokens {
             let pos: usize = i as usize;
