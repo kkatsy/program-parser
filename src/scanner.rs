@@ -1,10 +1,7 @@
 use std::borrow::{Borrow, BorrowMut};
-// use test::Options;
 use crate::character_stream::CharStream;
 use crate::token::{from_str, Token};
 use crate::token::TokenType;
-
-// TODO: add negation for numbers
 
 pub struct Scanner {
     keywords: Vec<String>,
@@ -14,6 +11,7 @@ pub struct Scanner {
     prev_lexeme: String,
     pub(crate) tokens: Vec<Token>,
     cur_char: char,
+    prev_char: char,
     cur_line_num: i32,
     cur_char_pos: i32,
     token_pos: i32,
@@ -31,6 +29,7 @@ impl Scanner {
             prev_lexeme: "".to_string(),
             tokens: Vec::new(),
             cur_char: ' ',
+            prev_char: ' ',
             cur_line_num: 0,
             cur_char_pos: -1,
             token_pos: -1,
@@ -66,6 +65,17 @@ impl Scanner {
         } else {
             false
         }
+    }
+
+    pub fn is_neg_num(&self) -> bool {
+        if self.cur_char == '-' {
+            if self.is_operator(self.prev_char.to_string()) {
+                if self.char_stream.peek_next_char().unwrap().is_numeric() {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     /* lookup if next lexeme is an operator */
@@ -110,6 +120,7 @@ impl Scanner {
         if self.cur_char.is_alphabetic() || self.cur_char ==  underscore {
             while {
                 self.add_to_lexeme(self.cur_char);
+                self.prev_char = self.cur_char;
                 self.cur_char = self.char_stream.get_next_char().unwrap();
 
                 self.cur_char.is_alphabetic() || self.cur_char ==  underscore
@@ -122,9 +133,15 @@ impl Scanner {
                 self.add_token(TokenType::IDENTIFIER);
             };
 
-        } else if self.cur_char.is_numeric() {
+        } else if self.cur_char.is_numeric() || self.is_neg_num() {
+            if self.is_neg_num() {
+                self.add_to_lexeme(self.cur_char);
+                self.prev_char = self.cur_char;
+                self.cur_char = self.char_stream.get_next_char().unwrap();
+            }
             while {
                 self.add_to_lexeme(self.cur_char);
+                self.prev_char = self.cur_char;
                 self.cur_char = self.char_stream.get_next_char().unwrap();
 
                 self.cur_char.is_numeric()
@@ -135,6 +152,7 @@ impl Scanner {
                 if peak_char.unwrap().is_numeric() {
                     while {
                         self.add_to_lexeme(self.cur_char);
+                        self.prev_char = self.cur_char;
                         self.cur_char = self.char_stream.get_next_char().unwrap();
 
                         self.cur_char.is_numeric()
@@ -148,6 +166,7 @@ impl Scanner {
         } else {
             self.look_up();
             // implement eof character
+            self.prev_char = self.cur_char;
             self.cur_char = self.char_stream.get_next_char().unwrap();
         };
 

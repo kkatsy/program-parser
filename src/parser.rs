@@ -1,5 +1,3 @@
-// recursive descent parser
-
 use crate::scanner::Scanner;
 use crate::token::{string_to_token, Token};
 use crate::token::TokenType;
@@ -39,46 +37,13 @@ pub fn get_color(t: &TokenType) -> &'static str {
     return color
 }
 
-pub enum EBNFrule {
-    NONE,
-    PROGRAM,
-    DECLARATION,
-    MAINDECLARATION,
-    FUNCTIONDEFINITION,
-    DECLARATIONTYPE,
-    VARIABLEDECLARATION,
-    FUNCTIONDECLARATION,
-    BLOCK,
-    PARAMETERBLOCK,
-    DATATYPE,
-    CONSTANT,
-    STATEMENT,
-    PARAMETER,
-    INTEGERTYPE,
-    FLOATTYPE,
-    ASSIGNMENT,
-    WHILELOOP,
-    IFSTATEMENT,
-    RETURNSTATEMENT,
-    EXPRESSION,
-    SIMPLEEXPRESSION,
-    TERM,
-    FACTOR,
-    RELATIONOPERATOR,
-    ADDOPERATOR,
-    MULTOPERATOR
-}
-
 pub struct Parser {
     parsed: String,
-    ebnf_list: Vec<EBNFrule>,
     scanner: Scanner,
     tokens: Vec<Token>,
     num_tokens: i32,
     cur_num: i32,
-    cur_token: Token,
-    error_line: i32,
-    error_rule: String
+    cur_token: Token
 }
 
 impl Parser {
@@ -86,14 +51,11 @@ impl Parser {
 
         Parser {
             parsed: "".to_string(),
-            ebnf_list: Vec::new(),
             scanner: s,
             tokens: Vec::new(),
             num_tokens: 0,
             cur_num: 0,
-            cur_token: Token::new("".to_string(), TokenType::NONE, 0, 0),
-            error_line: 0,
-            error_rule: "".to_string()
+            cur_token: Token::new("".to_string(), TokenType::NONE, 0, 0)
         }
     }
 
@@ -182,8 +144,12 @@ impl Parser {
         self.program();
     }
 
-    pub fn throw_error(& self) -> () {
-        println!("mama");
+    pub fn throw_error(& self, rule: &str) -> () {
+        println!("PARSING ERROR");
+        println!("Rule: {}", rule);
+        println!("Token: {} ", self.cur_token.get_text());
+        println!("Line: {}", self.cur_token.get_line_number() + 1);
+        panic!("terminating parser...");
     }
 
     pub fn program(&mut self) -> () {
@@ -256,7 +222,6 @@ impl Parser {
         self.get_next();
 
         self.block();
-        // self.get_next();
     }
 
     pub fn declaration_type(&mut self) -> () {
@@ -265,8 +230,8 @@ impl Parser {
         self.data_type();
         self.get_next();
 
-        if !self.identifier() { // terminal
-            self.throw_error();
+        if !self.identifier() {
+            self.throw_error("Declaration Type");
         }
     }
 
@@ -303,11 +268,11 @@ impl Parser {
                 self.constant();
                 self.get_next();
                 if self.cur_token.get_text() != ";" {
-                    self.throw_error()
+                    self.throw_error("Variable Declaration");
                 }
             }
         } else if self.cur_token.get_text() != ";" {
-            self.throw_error();
+            self.throw_error("Variable Declaration");
         };
     }
 
@@ -318,7 +283,7 @@ impl Parser {
         self.get_next();
 
         if self.cur_token.get_text() != ";" {
-            self.throw_error();
+            self.throw_error("Function Declaration");
         };
     }
 
@@ -330,6 +295,7 @@ impl Parser {
 
             while self.is_declaration_type() {
                 // declaration or func definition
+
                 let peak_token;
                 if self.cur_token.get_text() == "unsigned" {
                     peak_token = self.scanner.peak_nth_token(3);
@@ -348,21 +314,29 @@ impl Parser {
             }
 
             while (self.cur_token.get_text() != "}") && (self.cur_token.get_type().as_str() != "None") {
-                if self.integer_type() || self.float_type() {
-                    // func def
+                let peak_token;
+                if self.cur_token.get_text() == "unsigned" {
+                    peak_token = self.scanner.peak_nth_token(3);
+                } else {
+                    peak_token = self.scanner.peak_nth_token(2);
+                }
+
+                if peak_token.get_text() == "(" {
+                    // has to be func def
                     self.function_definition();
                 } else {
+                    // has to be a declaration
                     self.statement();
                 }
-                self.get_next()
+                self.get_next();
             }
 
             if self.cur_token.get_text() != "}" {
-                self.throw_error();
+                self.throw_error("Block");
             }
 
         } else {
-            self.throw_error();
+            self.throw_error("Block");
         }
     }
 
@@ -384,11 +358,11 @@ impl Parser {
             }
 
             if self.cur_token.get_text() != ")" {
-                self.throw_error();
+                self.throw_error("Parameter Block");
             }
 
         } else {
-            self.throw_error();
+            self.throw_error("Parameter Block");
         };
     }
 
@@ -396,7 +370,7 @@ impl Parser {
         // integer_type | float_type
 
         if !self.integer_type() & !self.float_type() {
-            self.throw_error();
+            self.throw_error("Data Type");
         }
     }
 
@@ -424,7 +398,7 @@ impl Parser {
         } else if self.cur_token.get_text() == "return" {
             self.return_statement();
 
-        } else if self.identifier() & (self.scanner.peak_next_token().get_text() == "=") {
+        } else if self.identifier() & (self.scanner.peak_next_token().get_text() == "=") || ((self.scanner.peak_nth_token(2).get_text() == "=") || (self.scanner.peak_nth_token(3).get_text() == "=")) {
             self.assignment();
 
         } else {
@@ -432,7 +406,7 @@ impl Parser {
             self.get_next();
 
             if self.cur_token.get_text() != ";" {
-                self.throw_error();
+                self.throw_error("Statement");
             };
         };
     }
@@ -444,7 +418,7 @@ impl Parser {
         self.get_next();
 
         if !self.identifier() {
-           self.throw_error();
+           self.throw_error("Parameter");
 
         } else {
             self.set_new_type("Variable".to_string());
@@ -486,6 +460,7 @@ impl Parser {
                 self.get_next();
 
                 while self.identifier() & (self.scanner.peak_next_token().get_text() == "="){
+                    self.set_new_type("Variable".to_string());
                     self.get_next();
 
                     if self.cur_token.get_text() == "=" {
@@ -497,7 +472,7 @@ impl Parser {
                 self.get_next();
 
                 if self.cur_token.get_text() != ";" {
-                    self.throw_error();
+                    self.throw_error("Assignment");
                 };
 
             }
@@ -521,15 +496,15 @@ impl Parser {
                     self.block();
 
                 } else {
-                    self.throw_error();
+                    self.throw_error("While Loop");
                 }
 
             } else {
-                self.throw_error();
+                self.throw_error("While Loop");
             }
 
         } else {
-            self.throw_error();
+            self.throw_error("While Loop");
         };
     }
 
@@ -550,15 +525,15 @@ impl Parser {
                     self.block();
 
                 } else {
-                    self.throw_error();
+                    self.throw_error("If Statement");
                 }
 
             } else {
-                self.throw_error();
+                self.throw_error("If Statement");
             }
 
         } else {
-            self.throw_error();
+            self.throw_error("If Statement");
         };
 
     }
@@ -572,10 +547,10 @@ impl Parser {
             self.get_next();
 
             if self.cur_token.get_text() != ";" {
-                self.throw_error();
+                self.throw_error("Return Statement");
             }
         } else {
-            self.throw_error();
+            self.throw_error("Return Statement");
         }
     }
 
@@ -624,7 +599,7 @@ impl Parser {
             self.get_next();
 
             if self.cur_token.get_text() != ")" {
-                self.throw_error();
+                self.throw_error("Factor");
             }
 
         } else if self.identifier() {
@@ -650,18 +625,18 @@ impl Parser {
                                 self.get_next();
                             }
                         } else {
-                            self.throw_error();
+                            self.throw_error("Factor");
                         }
                     }
                 }
 
                 if self.cur_token.get_text() != ")" {
-                    self.throw_error();
+                    self.throw_error("Factor");
                 }
             }
 
         } else if !self.constant(){
-            self.throw_error()
+            self.throw_error("Factor");
         }
 
     }

@@ -1,12 +1,7 @@
-//mod character_stream;
-//use character_stream::*;
-
 mod token;
 mod character_stream;
 mod scanner;
 mod parser;
-//
-// use token::*;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -17,7 +12,7 @@ use crate::scanner::Scanner;
 
 fn main() {
 
-	let mut stream = CharStream::new("example1.x");
+	let mut stream = CharStream::new("in.x");
 
 	let keywords = vec!["unsigned", "char", "short", "int", "long", "float", "double","while", "if", "return", "void", "main"];
 	let operators = vec!["(", ",", ")", "{", "}", "=", "==", "<", ">", "<=", ">=", "!=", "+", "-", "*", "/", ";"];
@@ -28,7 +23,7 @@ fn main() {
 	let mut parser = Parser::new(scanner);
 
 	parser.parse_tokens();
-	parser.create_file("example2.xhtml");
+	parser.create_file("out.xhtml");
 
-	println!("holy toledo");
+	println!("Parsed File!");
 }
