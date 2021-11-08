@@ -1,12 +1,12 @@
+/* CHARACTER STREAM */
+
 use std::fs::File;
 use std::io;
 use std::convert::TryFrom;
 use std::io::prelude::*;
 
-//
+
 pub struct CharStream {
-	// decide what properties need to include
-	// string with complete file
 	file_string: Vec<char>,
 	cur_pos: i32,
 	file_len: i32
@@ -26,19 +26,18 @@ impl CharStream {
 		}
 	}
 
-	pub fn get_contents(&self) -> String {
-		self.file_string.iter().collect::<String>()
-	}
-
+	/* get file length */
 	pub fn get_length(&self) -> &i32 {&self.file_len}
 
+	/* get current position in file */
 	pub fn get_pos(&self) -> &i32 {&self.cur_pos}
 
+	/*get file as a vector of characters */
 	pub fn get_char_vector(&self) -> &Vec<char> {
 		&self.file_string
 	}
 
-	// Returns true if more characters are available, false otherwise.
+	/* return true if more characters are available, false otherwise */
 	pub fn more_available(&self) -> bool {
 		if self.cur_pos < (self.file_len - 1) {
 			true
@@ -47,8 +46,7 @@ impl CharStream {
 		}
 	}
 
-	// Returns the next character without consuming it.
-	// Returns None if no more characters are available.
+	/* return the next character without consuming it */
 	pub fn peek_next_char(&self) -> Option<char> {
 		if self.more_available() {
 			let int_pos = self.cur_pos + 1;
@@ -59,10 +57,7 @@ impl CharStream {
 		}
 	}
 
-	// Returns the kth character ahead in the stream without consuming it.
-	// peek_ahead_char(0) returns the same character as peek_next_char().
-	// Returns None if no more characters are available at the position.
-	// The input k cannot be negative.
+	/* return the kth character ahead in the stream without consuming it */
 	pub fn peek_ahead_char(&self, k: i32) -> Option<char> {
 
 		let index = k + self.cur_pos;
@@ -75,8 +70,7 @@ impl CharStream {
 		}
 	}
 
-	// Returns the next character and consumes it.
-	// Returns None if no more characters are available.
+	/* return the next character and consume it */
 	pub fn get_next_char(&mut self) -> Option<char> {
 		if self.more_available() {
 			let int_pos = self.cur_pos + 1;

@@ -1,41 +1,13 @@
+/* RECURSIVE DESCENT PARSER */
+
 use crate::scanner::Scanner;
 use crate::token::{string_to_token, Token};
 use crate::token::TokenType;
 
 use std::fs::File;
 use std::io::Write;
+use crate::output::{end_file, get_color, start_file};
 
-pub fn start_file() -> String {
-    let start_file = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">  <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">  <head>  <title> X Formatted file</title>  </head>  <body bgcolor=\"navy\" text=\"yellow\" link=\"yellow\" vlink=\"yellow\">  <font face=\"Courier New\">";
-    start_file.to_string()
-}
-
-pub fn end_file() -> String {
-    let end_file = "</font> </body> </html>";
-    end_file.to_string()
-}
-
-pub fn get_color(t: &TokenType) -> &'static str {
-    let mut color = "";
-
-    if t.as_str() == "Function" {
-        color = "orange";
-    } else if t.as_str() == "Variable" {
-        color = "yellow";
-    } else if t.as_str() == "FloatConstant" {
-        color = "aqua";
-    } else if t.as_str() == "IntConstant" {
-        color = "aqua";
-    } else if t.as_str() == "Operator" {
-        color = "white";
-    } else if t.as_str() == "Keyword" {
-        color = "white";
-    } else {
-        color = "white"
-    };
-
-    return color
-}
 
 pub struct Parser {
     parsed: String,
@@ -59,6 +31,7 @@ impl Parser {
         }
     }
 
+    /* create xhtml from from list of tokens in parser struct */
     pub fn create_file(&self, file_name: &str) -> () {
 
         let mut file_string = "".to_string();
@@ -117,6 +90,7 @@ impl Parser {
         f.write_all(file_string.as_bytes()).expect("Unable to write data");
     }
 
+    /* set identifier type to function or variable */
     pub fn set_new_type(&mut self, new_type: String) -> (){
         let text = self.cur_token.get_text().to_string();
         let line = self.cur_token.get_line_number();
@@ -127,6 +101,7 @@ impl Parser {
         self.cur_token = edit_token;
     }
 
+    /* get next token and consume it */
     pub fn get_next(&mut self) -> () {
         let text = self.cur_token.get_text().to_string();
         let line = self.cur_token.get_line_number();
@@ -139,11 +114,14 @@ impl Parser {
         self.cur_token = self.scanner.get_next_token();
     }
 
+    /* parse tokens in file */
     pub fn parse_tokens(&mut self) -> () {
         self.get_next();
         self.program();
     }
 
+    /* grammar rule error handling */
+    /* terminate program and print error details */
     pub fn throw_error(& self, rule: &str) -> () {
         println!("PARSING ERROR");
         println!("Rule: {}", rule);
@@ -151,6 +129,9 @@ impl Parser {
         println!("Line: {}", self.cur_token.get_line_number() + 1);
         panic!("terminating parser...");
     }
+
+
+    /* EBNF RULE METHODS */
 
     pub fn program(&mut self) -> () {
         // {declaration} main_declaration {function_definition}

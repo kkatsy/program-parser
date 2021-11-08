@@ -1,7 +1,10 @@
+/* LEXICAL PARSER */
+
 use std::borrow::{Borrow, BorrowMut};
 use crate::character_stream::CharStream;
 use crate::token::{from_str, Token};
 use crate::token::TokenType;
+
 
 pub struct Scanner {
     keywords: Vec<String>,
@@ -37,16 +40,16 @@ impl Scanner {
         }
     }
 
-    pub fn get_keywords(&self) -> &Vec<String> { &self.keywords }
-
-    pub fn get_operators(&self) -> &Vec<String> { &self.operators }
-
+    /* get the vector of all tokens */
     pub fn get_tokens(self) -> Vec<Token> { self.tokens }
 
+    /* get the position of the token */
     pub fn get_token_pos(self) -> i32 { self.token_pos }
 
+    /* get the total number of tokens */
     pub fn get_token_num(self) -> i32 { self.tokens.len() as i32 }
 
+    /* print the current lexeme */
     pub fn print_lexeme(&self) -> () { println!("cur lexeme: {}", &self.cur_lexeme); }
 
     /* check if string in the keyword list */
@@ -67,6 +70,7 @@ impl Scanner {
         }
     }
 
+    /* check if cur char belongs to a negative number */
     pub fn is_neg_num(&self) -> bool {
         if self.cur_char == '-' {
             if self.is_operator(self.prev_char.to_string()) {
@@ -116,6 +120,8 @@ impl Scanner {
 
     /* get next lexeme in char stream */
     pub fn lexer(&mut self) -> () {
+
+        // identifier
         let underscore = "_".chars().next().unwrap();
         if self.cur_char.is_alphabetic() || self.cur_char ==  underscore {
             while {
@@ -127,12 +133,15 @@ impl Scanner {
             } {};
 
             let mut current_lexeme = &self.cur_lexeme;
+
+            // check if identifier is a keyword
             if self.is_keyword(current_lexeme.to_string()) {
                 self.add_token(TokenType::KEYWORD);
             } else {
                 self.add_token(TokenType::IDENTIFIER);
             };
 
+        // float or integer number
         } else if self.cur_char.is_numeric() || self.is_neg_num() {
             if self.is_neg_num() {
                 self.add_to_lexeme(self.cur_char);
@@ -147,6 +156,7 @@ impl Scanner {
                 self.cur_char.is_numeric()
             } {};
 
+            // if decimal between numbers -> float
             if self.cur_char == ".".chars().next().unwrap() {
                 let peak_char = self.char_stream.peek_next_char();
                 if peak_char.unwrap().is_numeric() {
@@ -164,12 +174,13 @@ impl Scanner {
             };
 
         } else {
+            // check that char is a operator
             self.look_up();
-            // implement eof character
             self.prev_char = self.cur_char;
             self.cur_char = self.char_stream.get_next_char().unwrap();
         };
 
+        // clear cur lexeme after prev added to token list
         self.cur_lexeme = "".to_string();
     }
 
@@ -178,6 +189,7 @@ impl Scanner {
         let mut a_char: Option<char> = Option::from(self.cur_char);
 
         while (a_char.unwrap().is_whitespace()) || (a_char.unwrap() == "\n".parse().unwrap()){
+            // if newline -> increment line position
             if a_char.unwrap() == "\n".parse().unwrap() {
                 self.cur_line_num = self.cur_line_num  + 1;
             }
@@ -200,6 +212,7 @@ impl Scanner {
         self.num_tokens = self.tokens.len() as i32;
     }
 
+    /* check if more tokens available in file */
     pub fn more_tokens_available(&self) -> bool {
         if self.token_pos < (self.num_tokens - 1) {
             true
@@ -211,8 +224,6 @@ impl Scanner {
     /* get the next token from the token vector */
     pub fn get_next_token(& mut self) -> Token {
         if self.more_tokens_available() {
-            // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
-            // self.tokens.push(a_token);
             self.token_pos = self.token_pos + 1;
             let pos: usize = self.token_pos as usize;
             let next_token_at = &self.tokens[pos];
@@ -231,10 +242,9 @@ impl Scanner {
 
     }
 
+    /* peak the next token without consuming it */
     pub fn peak_next_token(&self) -> Token {
         if self.more_tokens_available() {
-            // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
-            // self.tokens.push(a_token);
             let peak_pos = self.token_pos + 1;
             let pos: usize = peak_pos as usize;
             let next_token_at = &self.tokens[pos];
@@ -252,10 +262,9 @@ impl Scanner {
         }
     }
 
+    /* peak the next nth token without consuming it */
     pub fn peak_nth_token(&self, n: i32) -> Token {
         if self.more_tokens_available() {
-            // let a_token = Token::new("+".to_string(), TokenType::NONE, 2, 30);
-            // self.tokens.push(a_token);
             let peak_pos = self.token_pos + n;
             let pos: usize = peak_pos as usize;
             let next_token_at = &self.tokens[pos];
@@ -273,6 +282,7 @@ impl Scanner {
         }
     }
 
+    /* get the ith token in file */
     pub fn get_ith_token(&self, i: i32) -> Token {
         if i < self.num_tokens {
             let pos: usize = i as usize;

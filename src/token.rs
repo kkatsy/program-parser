@@ -1,3 +1,6 @@
+/* TOKEN STRUCT AND FUNCTIONS */
+
+
 pub enum TokenType {
     NONE,
 	INTCONSTANT,
@@ -10,6 +13,7 @@ pub enum TokenType {
     IDENTIFIER
 }
 
+/* match string to token type*/
 pub fn string_to_token(token_string: &str) -> TokenType {
     let the_token_string = token_string;
     match the_token_string {
@@ -27,6 +31,8 @@ pub fn string_to_token(token_string: &str) -> TokenType {
 }
 
 impl TokenType {
+
+    /* get string of token type*/
     pub fn as_str(&self) -> &'static str {
         match &self {
             TokenType::NONE => "None",
@@ -43,6 +49,7 @@ impl TokenType {
 
 }
 
+/* get token type from string */
 pub fn from_str(s: &str) -> TokenType {
     match s {
         "None" => TokenType::NONE,
